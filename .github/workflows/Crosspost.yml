@@ -1,1 +1,84 @@
+name: Crosspost to Social Media
 
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - '_posts/**'               # 👈 CHANGE: folder where your posts live (Jekyll: _posts/)
+      - 'content/blog/**'         # 👈 CHANGE: or content/blog/ for Hugo
+      - '*.md'                    # 👈 if posts are in root
+  workflow_dispatch:              # manual trigger for testing
+
+jobs:
+  crosspost:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0          # needed to detect changed files
+
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v41
+        with:
+          files: |
+            _posts/**/*.md
+            content/**/*.md
+            **/*.md
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Parse post metadata
+        id: parse
+        if: github.event_name == 'push' && steps.changed-files.outputs.any_changed == 'true'
+        run: |
+          POST_FILE=$(echo "${{ steps.changed-files.outputs.all_changed_files }}" | head -n1)
+          echo "Post file: $POST_FILE"
+          node scripts/parse-frontmatter.js "$POST_FILE" > post-data.json
+          echo "POST_URL=$(jq -r .url post-data.json)" >> $GITHUB_ENV
+          echo "POST_TITLE=$(jq -r .title post-data.json)" >> $GITHUB_ENV
+          echo "POST_DESCRIPTION=$(jq -r .description post-data.json)" >> $GITHUB_ENV
+          echo "POST_IMAGE=$(jq -r .image post-data.json)" >> $GITHUB_ENV
+
+      - name: Crosspost (auto)
+        if: github.event_name == 'push' && env.POST_URL != ''
+        env:
+          PINTEREST_ACCESS_TOKEN: ${{ secrets.PINTEREST_ACCESS_TOKEN }}
+          PINTEREST_BOARD_ID: ${{ secrets.PINTEREST_BOARD_ID }}
+          TWITTER_API_KEY: ${{ secrets.TWITTER_API_KEY }}
+          TWITTER_API_SECRET: ${{ secrets.TWITTER_API_SECRET }}
+          TWITTER_ACCESS_TOKEN: ${{ secrets.TWITTER_ACCESS_TOKEN }}
+          TWITTER_ACCESS_SECRET: ${{ secrets.TWITTER_ACCESS_SECRET }}
+          FACEBOOK_PAGE_ACCESS_TOKEN: ${{ secrets.FACEBOOK_PAGE_ACCESS_TOKEN }}
+          FACEBOOK_PAGE_ID: ${{ secrets.FACEBOOK_PAGE_ID }}
+          POST_URL: ${{ env.POST_URL }}
+          POST_TITLE: ${{ env.POST_TITLE }}
+          POST_DESCRIPTION: ${{ env.POST_DESCRIPTION }}
+          POST_IMAGE: ${{ env.POST_IMAGE }}
+        run: node scripts/elite-crosspost.js
+
+      - name: Crosspost (manual)
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          PINTEREST_ACCESS_TOKEN: ${{ secrets.PINTEREST_ACCESS_TOKEN }}
+          PINTEREST_BOARD_ID: ${{ secrets.PINTEREST_BOARD_ID }}
+          TWITTER_API_KEY: ${{ secrets.TWITTER_API_KEY }}
+          TWITTER_API_SECRET: ${{ secrets.TWITTER_API_SECRET }}
+          TWITTER_ACCESS_TOKEN: ${{ secrets.TWITTER_ACCESS_TOKEN }}
+          TWITTER_ACCESS_SECRET: ${{ secrets.TWITTER_ACCESS_SECRET }}
+          FACEBOOK_PAGE_ACCESS_TOKEN: ${{ secrets.FACEBOOK_PAGE_ACCESS_TOKEN }}
+          FACEBOOK_PAGE_ID: ${{ secrets.FACEBOOK_PAGE_ID }}
+          POST_URL: ${{ github.event.inputs.post_url }}
+          POST_TITLE: ${{ github.event.inputs.post_title }}
+          POST_DESCRIPTION: ${{ github.event.inputs.post_description }}
+          POST_IMAGE: ${{ github.event.inputs.post_image }}
+        run: node scripts/elite-crosspost.js
