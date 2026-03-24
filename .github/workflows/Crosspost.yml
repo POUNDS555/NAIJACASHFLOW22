@@ -4,9 +4,7 @@ on:
   push:
     branches: [ main ]
     paths:
-      - '_posts/**'               # 👈 CHANGE: folder where your posts live (Jekyll: _posts/)
-      - 'content/blog/**'         # 👈 CHANGE: or content/blog/ for Hugo
-      - '*.md'                    # 👈 if posts are in root
+      - '_posts/**'               # ✅ FIXED: Only Jekyll posts folder
   workflow_dispatch:              # manual trigger for testing
 
 jobs:
@@ -24,9 +22,7 @@ jobs:
         uses: tj-actions/changed-files@v41
         with:
           files: |
-            _posts/**/*.md
-            content/**/*.md
-            **/*.md
+            _posts/**/*.md        # ✅ FIXED: Only Jekyll markdown posts
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
