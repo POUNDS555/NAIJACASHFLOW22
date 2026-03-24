@@ -16,7 +16,7 @@ const { data, content } = matter(fileContent);
 // Extract metadata with sensible defaults
 const title = data.title || 'Untitled';
 const description = data.description || data.excerpt || content.slice(0, 200).replace(/\n/g, ' ').trim();
-const image = data.image || data.thumbnail || 'https://naijacashflow.com/images/default-og.jpg';
+const image = data.image || data.thumbnail || 'https://naijacashflow.com/images/default-og.jpg'; // ✅ default image
 
 // Build the post URL
 let url;
