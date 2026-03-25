@@ -4,15 +4,15 @@ on:
   push:
     branches: [ main ]
     paths:
-      - '_posts/**'
-  workflow_dispatch:
+      - '_posts/**'               # Jekyll posts folder
+  workflow_dispatch:              # manual trigger for testing
 
 jobs:
   crosspost:
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true   # 👈 Forces Node.js 24 for actions
+    env:                          # 👈 Force actions to run on Node.js 24
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -33,7 +33,7 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm install
+        run: npm install          # ✅ No lock file required
 
       - name: Parse post metadata
         id: parse
