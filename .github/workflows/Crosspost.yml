@@ -4,25 +4,27 @@ on:
   push:
     branches: [ main ]
     paths:
-      - '_posts/**'               # Jekyll posts folder
-  workflow_dispatch:              # manual trigger for testing
+      - '_posts/**'
+  workflow_dispatch:
 
 jobs:
   crosspost:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true   # 👈 Add this line
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0          # needed to detect changed files
+          fetch-depth: 0
 
       - name: Get changed files
         id: changed-files
         uses: tj-actions/changed-files@v41
         with:
           files: |
-            _posts/**/*.md        # Jekyll markdown posts
+            _posts/**/*.md
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -31,7 +33,7 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm install          # ✅ Changed from npm ci to npm install
+        run: npm install
 
       - name: Parse post metadata
         id: parse
