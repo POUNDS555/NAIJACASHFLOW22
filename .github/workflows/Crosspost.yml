@@ -4,34 +4,36 @@ on:
   push:
     branches: [ main ]
     paths:
-      - '_posts/**'               # Jekyll posts folder
-  workflow_dispatch:              # manual trigger for testing
+      - '_posts/**'
+  workflow_dispatch:
 
 jobs:
   crosspost:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true   # optional extra safety
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5          # ✅ upgraded to Node.js 24
+        uses: actions/checkout@v5          # ✅ Node.js 24 compatible
         with:
           fetch-depth: 0
 
       - name: Get changed files
         id: changed-files
-        uses: tj-actions/changed-files@v44  # ✅ upgraded to Node.js 24
+        uses: tj-actions/changed-files@v44  # ✅ Node.js 24 compatible
         with:
           files: |
             _posts/**/*.md
 
       - name: Setup Node.js
-        uses: actions/setup-node@v5         # ✅ upgraded to Node.js 24
+        uses: actions/setup-node@v5         # ✅ Node.js 24 compatible
         with:
           node-version: '20'
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm install          # ✅ No lock file required
+        run: npm install                    # ✅ No lock file required
 
       - name: Parse post metadata
         id: parse
