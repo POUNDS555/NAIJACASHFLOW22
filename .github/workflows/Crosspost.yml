@@ -33,25 +33,22 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
-      # This step helps debug if files are actually there
-      - name: Check files
-        run: ls -R
-
       - name: Install dependencies
+        # This MUST run every time so 'axios' is available
         run: npm install
 
       - name: Parse post metadata (Push only)
         id: parse
-        if: github.event_name == 'push' && steps.changed-files.outputs.any_changed == 'true'
+        if: github.event_name == 'push'
         run: |
-          POST_FILE=$(echo "${{ steps.changed-files.outputs.all_changed_files }}" | head -n1)
+          POST_FILE=$(ls _posts/*.md | head -n 1)
           node scripts/parse-frontmatter.js "$POST_FILE" > post-data.json
           echo "POST_URL=$(jq -r .url post-data.json)" >> $GITHUB_ENV
           echo "POST_TITLE=$(jq -r .title post-data.json)" >> $GITHUB_ENV
           echo "POST_DESCRIPTION=$(jq -r .description post-data.json)" >> $GITHUB_ENV
           echo "POST_IMAGE=$(jq -r .image post-data.json)" >> $GITHUB_ENV
 
-      - name: Crosspost
+      - name: Crosspost execution
         env:
           POST_URL: ${{ github.event.inputs.post_url || env.POST_URL }}
           POST_TITLE: ${{ github.event.inputs.post_title || env.POST_TITLE }}
@@ -65,6 +62,4 @@ jobs:
           TWITTER_ACCESS_SECRET: ${{ secrets.TWITTER_ACCESS_SECRET }}
           FACEBOOK_PAGE_ACCESS_TOKEN: ${{ secrets.FACEBOOK_PAGE_ACCESS_TOKEN }}
           FACEBOOK_PAGE_ID: ${{ secrets.FACEBOOK_PAGE_ID }}
-        # Only run if we have a URL from either push or manual trigger
-        if: always() && (github.event.inputs.post_url != '' || env.POST_URL != '')
         run: node scripts/elite-crosspost.js
