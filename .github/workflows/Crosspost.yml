@@ -6,50 +6,62 @@ on:
     paths:
       - '_posts/**'
   workflow_dispatch:
+    inputs:
+      post_url:
+        description: 'URL of the post'
+        required: true
+      post_title:
+        description: 'Title of the post'
+        required: true
+      post_description:
+        description: 'Description/Caption'
+        required: true
+      post_image:
+        description: 'Image URL'
+        required: true
 
 jobs:
   crosspost:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true   # optional extra safety
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5          # ✅ Node.js 24 compatible
-        with:
-          fetch-depth: 0
+        uses: actions/checkout@v4
 
       - name: Get changed files
         id: changed-files
-        uses: tj-actions/changed-files@v44  # ✅ Node.js 24 compatible
+        uses: tj-actions/changed-files@v45 # Updated version
         with:
           files: |
             _posts/**/*.md
 
       - name: Setup Node.js
-        uses: actions/setup-node@v5         # ✅ Node.js 24 compatible
+        uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm install                    # ✅ No lock file required
+        run: npm install
 
-      - name: Parse post metadata
+      - name: Parse post metadata (Push only)
         id: parse
         if: github.event_name == 'push' && steps.changed-files.outputs.any_changed == 'true'
         run: |
           POST_FILE=$(echo "${{ steps.changed-files.outputs.all_changed_files }}" | head -n1)
-          echo "Post file: $POST_FILE"
           node scripts/parse-frontmatter.js "$POST_FILE" > post-data.json
           echo "POST_URL=$(jq -r .url post-data.json)" >> $GITHUB_ENV
           echo "POST_TITLE=$(jq -r .title post-data.json)" >> $GITHUB_ENV
           echo "POST_DESCRIPTION=$(jq -r .description post-data.json)" >> $GITHUB_ENV
           echo "POST_IMAGE=$(jq -r .image post-data.json)" >> $GITHUB_ENV
 
-      - name: Crosspost (auto)
-        if: github.event_name == 'push' && env.POST_URL != ''
+      - name: Crosspost
         env:
+          # This logic handles both Push (ENV) and Manual (INPUTS)
+          POST_URL: ${{ github.event.inputs.post_url || env.POST_URL }}
+          POST_TITLE: ${{ github.event.inputs.post_title || env.POST_TITLE }}
+          POST_DESCRIPTION: ${{ github.event.inputs.post_description || env.POST_DESCRIPTION }}
+          POST_IMAGE: ${{ github.event.inputs.post_image || env.POST_IMAGE }}
+          # Secrets
           PINTEREST_ACCESS_TOKEN: ${{ secrets.PINTEREST_ACCESS_TOKEN }}
           PINTEREST_BOARD_ID: ${{ secrets.PINTEREST_BOARD_ID }}
           TWITTER_API_KEY: ${{ secrets.TWITTER_API_KEY }}
@@ -58,25 +70,6 @@ jobs:
           TWITTER_ACCESS_SECRET: ${{ secrets.TWITTER_ACCESS_SECRET }}
           FACEBOOK_PAGE_ACCESS_TOKEN: ${{ secrets.FACEBOOK_PAGE_ACCESS_TOKEN }}
           FACEBOOK_PAGE_ID: ${{ secrets.FACEBOOK_PAGE_ID }}
-          POST_URL: ${{ env.POST_URL }}
-          POST_TITLE: ${{ env.POST_TITLE }}
-          POST_DESCRIPTION: ${{ env.POST_DESCRIPTION }}
-          POST_IMAGE: ${{ env.POST_IMAGE }}
-        run: node scripts/elite-crosspost.js
-
-      - name: Crosspost (manual)
-        if: github.event_name == 'workflow_dispatch'
-        env:
-          PINTEREST_ACCESS_TOKEN: ${{ secrets.PINTEREST_ACCESS_TOKEN }}
-          PINTEREST_BOARD_ID: ${{ secrets.PINTEREST_BOARD_ID }}
-          TWITTER_API_KEY: ${{ secrets.TWITTER_API_KEY }}
-          TWITTER_API_SECRET: ${{ secrets.TWITTER_API_SECRET }}
-          TWITTER_ACCESS_TOKEN: ${{ secrets.TWITTER_ACCESS_TOKEN }}
-          TWITTER_ACCESS_SECRET: ${{ secrets.TWITTER_ACCESS_SECRET }}
-          FACEBOOK_PAGE_ACCESS_TOKEN: ${{ secrets.FACEBOOK_PAGE_ACCESS_TOKEN }}
-          FACEBOOK_PAGE_ID: ${{ secrets.FACEBOOK_PAGE_ID }}
-          POST_URL: ${{ github.event.inputs.post_url }}
-          POST_TITLE: ${{ github.event.inputs.post_title }}
-          POST_DESCRIPTION: ${{ github.event.inputs.post_description }}
-          POST_IMAGE: ${{ github.event.inputs.post_image }}
+        # Only run if we actually have a URL
+        if: env.POST_URL != '' || github.event.inputs.post_url != ''
         run: node scripts/elite-crosspost.js
