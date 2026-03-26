@@ -4,7 +4,8 @@
   "description": "Crosspost to Pinterest, Twitter, Facebook",
   "main": "scripts/elite-crosspost.js",
   "scripts": {
-    "crosspost": "node scripts/elite-crosspost.js"
+    "start": "node scripts/elite-crosspost.js",
+    "test": "node scripts/parse-frontmatter.js"
   },
   "dependencies": {
     "axios": "^1.6.2",
@@ -13,19 +14,6 @@
     "twitter-api-v2": "^1.15.2"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=20.0.0"
   }
 }
-{
-  "name": "crosspost-automation",
-  "version": "1.0.0",
-  "description": "Crosspost to Pinterest, Twitter, Facebook",
-  "main": "scripts/elite-crosspost.js",
-  "dependencies": {
-    "axios": "^1.6.2",
-    "form-data": "^4.0.0",
-    "gray-matter": "^4.0.3",
-    "twitter-api-v2": "^1.15.2"
-  }
-}
-    
