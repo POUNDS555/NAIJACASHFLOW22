@@ -27,18 +27,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Get changed files
-        id: changed-files
-        uses: tj-actions/changed-files@v45 # Updated version
-        with:
-          files: |
-            _posts/**/*.md
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
+
+      # This step helps debug if files are actually there
+      - name: Check files
+        run: ls -R
 
       - name: Install dependencies
         run: npm install
@@ -56,12 +53,10 @@ jobs:
 
       - name: Crosspost
         env:
-          # This logic handles both Push (ENV) and Manual (INPUTS)
           POST_URL: ${{ github.event.inputs.post_url || env.POST_URL }}
           POST_TITLE: ${{ github.event.inputs.post_title || env.POST_TITLE }}
           POST_DESCRIPTION: ${{ github.event.inputs.post_description || env.POST_DESCRIPTION }}
           POST_IMAGE: ${{ github.event.inputs.post_image || env.POST_IMAGE }}
-          # Secrets
           PINTEREST_ACCESS_TOKEN: ${{ secrets.PINTEREST_ACCESS_TOKEN }}
           PINTEREST_BOARD_ID: ${{ secrets.PINTEREST_BOARD_ID }}
           TWITTER_API_KEY: ${{ secrets.TWITTER_API_KEY }}
@@ -70,6 +65,6 @@ jobs:
           TWITTER_ACCESS_SECRET: ${{ secrets.TWITTER_ACCESS_SECRET }}
           FACEBOOK_PAGE_ACCESS_TOKEN: ${{ secrets.FACEBOOK_PAGE_ACCESS_TOKEN }}
           FACEBOOK_PAGE_ID: ${{ secrets.FACEBOOK_PAGE_ID }}
-        # Only run if we actually have a URL
-        if: env.POST_URL != '' || github.event.inputs.post_url != ''
+        # Only run if we have a URL from either push or manual trigger
+        if: always() && (github.event.inputs.post_url != '' || env.POST_URL != '')
         run: node scripts/elite-crosspost.js
