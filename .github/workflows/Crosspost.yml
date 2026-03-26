@@ -15,17 +15,20 @@ on:
         required: true
       post_description:
         description: 'Description/Caption'
-        required: true
+        required: false
       post_image:
         description: 'Image URL'
-        required: true
+        required: false
 
 jobs:
   crosspost:
     runs-on: ubuntu-latest
+    env:
+      # This removes the Node 24 warning for now
+      ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4 # Use v4 or v5
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -34,26 +37,14 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        # This MUST run every time so 'axios' is available
         run: npm install
-
-      - name: Parse post metadata (Push only)
-        id: parse
-        if: github.event_name == 'push'
-        run: |
-          POST_FILE=$(ls _posts/*.md | head -n 1)
-          node scripts/parse-frontmatter.js "$POST_FILE" > post-data.json
-          echo "POST_URL=$(jq -r .url post-data.json)" >> $GITHUB_ENV
-          echo "POST_TITLE=$(jq -r .title post-data.json)" >> $GITHUB_ENV
-          echo "POST_DESCRIPTION=$(jq -r .description post-data.json)" >> $GITHUB_ENV
-          echo "POST_IMAGE=$(jq -r .image post-data.json)" >> $GITHUB_ENV
 
       - name: Crosspost execution
         env:
-          POST_URL: ${{ github.event.inputs.post_url || env.POST_URL }}
-          POST_TITLE: ${{ github.event.inputs.post_title || env.POST_TITLE }}
-          POST_DESCRIPTION: ${{ github.event.inputs.post_description || env.POST_DESCRIPTION }}
-          POST_IMAGE: ${{ github.event.inputs.post_image || env.POST_IMAGE }}
+          POST_URL: ${{ github.event.inputs.post_url }}
+          POST_TITLE: ${{ github.event.inputs.post_title }}
+          POST_DESCRIPTION: ${{ github.event.inputs.post_description }}
+          POST_IMAGE: ${{ github.event.inputs.post_image }}
           PINTEREST_ACCESS_TOKEN: ${{ secrets.PINTEREST_ACCESS_TOKEN }}
           PINTEREST_BOARD_ID: ${{ secrets.PINTEREST_BOARD_ID }}
           TWITTER_API_KEY: ${{ secrets.TWITTER_API_KEY }}
